@@ -1287,7 +1287,25 @@ RLM_ARRAY_TYPE(PrimaryIntObject);
         [realm deleteObject:obj];
         XCTAssertThrows([obj linkingObjectsOfClass:StringLinkObject.className forProperty:@"stringObjectCol"]);
     }];
+}
 
+- (void)testKVO {
+    RLMRealm *realm = RLMRealm.defaultRealm;
+    [realm beginWriteTransaction];
+
+    IntObject *obj1 = [IntObject createInDefaultRealmWithObject:@[@5]];
+    IntObject *obj2 = [IntObject allObjects].firstObject;
+
+    [obj2 addObserver:self forKeyPath:@"intCol" options:0 context:0];
+//    [obj2 addObserver:self forKeyPath:@"stringCol" options:0 context:0];
+    obj1.intCol = 10;
+
+    [realm commitWriteTransaction];
+    [obj2 removeObserver:obj1 forKeyPath:@"intCol"];
+}
+
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context {
+    NSLog(@"observe: %@ %@ %@", keyPath, object, change);
 }
 
 @end

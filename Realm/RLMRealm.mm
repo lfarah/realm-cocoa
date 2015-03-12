@@ -23,6 +23,7 @@
 #import "RLMObject_Private.h"
 #import "RLMObjectSchema_Private.hpp"
 #import "RLMObjectStore.h"
+#import "RLMObject_Private.hpp"
 #import "RLMQueryUtil.hpp"
 #import "RLMRealmUtil.h"
 #import "RLMSchema_Private.h"
@@ -593,6 +594,26 @@ static void CheckReadWrite(RLMRealm *realm, NSString *msg=@"Cannot write to a re
     [_notifier stop];
 }
 
+static void advance_notify(SharedGroup *sg, RLMSchema *schema) {
+    SharedGroup::AdvanceRead advancer(*sg);
+    for (RLMObjectSchema *objectSchema in schema.objectSchema) {
+        if (!objectSchema->_observers.count)
+            continue;
+        auto modified = advancer.get_modified_rows(objectSchema.table->get_index_in_group());
+        for (NSString *key in objectSchema->_observers) {
+            for (RLMObservationInfo *observer in objectSchema->_observers[key]) {
+                if (modified.find_by_source_ndx(observer.obj->_row.get_index()) != tightdb::not_found) {
+                    id value = [observer.obj valueForKey:key];
+                    if (![value isEqual:observer.oldValue]) {
+                        RLMWillChange(observer, key);
+                        RLMDidChange(observer, key, value);
+                    }
+                }
+            }
+        }
+    }
+}
+
 - (void)handleExternalCommit {
     RLMCheckThread(self);
     NSAssert(!_readOnly, @"Read-only realms do not have notifications");
@@ -600,7 +621,7 @@ static void CheckReadWrite(RLMRealm *realm, NSString *msg=@"Cannot write to a re
         if (_sharedGroup->has_changed()) { // Throws
             if (_autorefresh) {
                 if (_group) {
-                    LangBindHelper::advance_read(*_sharedGroup);
+                    advance_notify(_sharedGroup.get(), _schema);
                 }
                 [self sendNotifications:RLMRealmDidChangeNotification];
             }
@@ -627,7 +648,7 @@ static void CheckReadWrite(RLMRealm *realm, NSString *msg=@"Cannot write to a re
         // advance transaction if database has changed
         if (_sharedGroup->has_changed()) { // Throws
             if (_group) {
-                LangBindHelper::advance_read(*_sharedGroup);
+                advance_notify(_sharedGroup.get(), _schema);
             }
             else {
                 // Create the read transaction
