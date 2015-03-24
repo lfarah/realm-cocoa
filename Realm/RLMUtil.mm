@@ -252,7 +252,7 @@ NSException *RLMException(NSString *reason, NSDictionary *userInfo) {
     NSMutableDictionary *info = [NSMutableDictionary dictionaryWithDictionary:userInfo];
     [info addEntriesFromDictionary:@{
                                      RLMRealmVersionKey : REALM_COCOA_VERSION,
-                                     RLMRealmCoreVersionKey : @TIGHTDB_VERSION
+                                     RLMRealmCoreVersionKey : @REALM_VERSION
                                      }];
 
     return [NSException exceptionWithName:RLMExceptionName reason:reason userInfo:info];
