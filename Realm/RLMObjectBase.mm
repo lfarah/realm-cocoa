@@ -198,6 +198,8 @@
     if (options & NSKeyValueObservingOptionOld) {
         info.oldValue = [self valueForKey:keyPath];
     }
+    info.key = keyPath;
+    info.column = _objectSchema[keyPath].column;
     [observers addObject:info];
 
     if (options & NSKeyValueObservingOptionInitial) {
@@ -261,8 +263,6 @@ void RLMDidChange(RLMObservationInfo *info, NSString *key, id value) {
 
 @implementation RLMObservationInfo
 @end
-
-
 
 void RLMObjectBaseSetRealm(__unsafe_unretained RLMObjectBase *object, __unsafe_unretained RLMRealm *realm) {
     if (object) {

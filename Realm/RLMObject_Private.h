@@ -79,4 +79,6 @@ FOUNDATION_EXTERN Class RLMObjectUtilClass(BOOL isSwift);
 @property (nonatomic) NSKeyValueObservingOptions options;
 @property (nonatomic) void *context;
 @property (nonatomic) id oldValue;
+@property (nonatomic) NSString *key;
+@property (nonatomic) size_t column;
 @end
